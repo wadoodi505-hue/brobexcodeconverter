@@ -1,7 +1,19 @@
-﻿import { parse } from "@babel/parser";
+import { parse } from "@babel/parser";
+import type { ParserPlugin } from "@babel/parser";
 import transformTypeScript from "@babel/plugin-transform-typescript";
 import { transformFromAstSync } from "@babel/core";
 import type { ConversionSettings, ConversionResult, Diagnostic, LanguageId } from "../../types/conversion";
+
+function getBabelPlugins(language: LanguageId): ParserPlugin[] {
+  const languagePlugins: ParserPlugin[] = language === "tsx"
+    ? ["typescript", "jsx"]
+    : language === "typescript"
+      ? ["typescript"]
+      : language === "jsx"
+        ? ["jsx"]
+        : [];
+  return [...languagePlugins, "decorators-legacy", "classProperties", "dynamicImport", "importAttributes"];
+}
 
 export function convertWithBabel(input: string, filename: string, source: LanguageId, target: LanguageId, settings: ConversionSettings): ConversionResult {
   const isTs = source === "tsx" || source === "typescript";
@@ -11,7 +23,7 @@ export function convertWithBabel(input: string, filename: string, source: Langua
     const ast = parse(input, {
       sourceType: "unambiguous",
       sourceFilename: filename,
-      plugins: [isTs ? "typescript" : "jsx", "decorators-legacy", "classProperties", "dynamicImport", "importAttributes"],
+      plugins: getBabelPlugins(source),
       errorRecovery: false
     });
     let output: string;
@@ -22,7 +34,6 @@ export function convertWithBabel(input: string, filename: string, source: Langua
         babelrc: false,
         comments: settings.preserveComments,
         plugins: [[transformTypeScript, { isTSX: source === "tsx", allExtensions: true, allowDeclareFields: true }]],
-        presets: source === "tsx" ? [["@babel/preset-react", { runtime: "automatic" }]] : []
       });
       output = transformed?.code ?? "";
     } else {
@@ -32,7 +43,6 @@ export function convertWithBabel(input: string, filename: string, source: Langua
         configFile: false,
         babelrc: false,
         comments: settings.preserveComments,
-        presets: source === "jsx" ? [["@babel/preset-react", { runtime: "automatic" }]] : []
       });
       output = transformed?.code ?? input;
       diagnostics.push({ severity: "warning", message: "No types were inferred or invented. Add and verify TypeScript annotations manually." });
@@ -41,7 +51,7 @@ export function convertWithBabel(input: string, filename: string, source: Langua
     // Validate output with the target grammar after transformation.
     parse(output, {
       sourceType: "unambiguous",
-      plugins: [target === "tsx" || target === "typescript" ? "typescript" : "jsx", "decorators-legacy", "classProperties", "dynamicImport", "importAttributes"]
+      plugins: getBabelPlugins(target)
     });
     const errors = diagnostics.some((d) => d.severity === "error");
     return {

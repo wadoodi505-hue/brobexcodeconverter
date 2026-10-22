@@ -1,4 +1,6 @@
-export type LanguageId = "typescript" | "tsx" | "javascript" | "jsx" | "json" | "yaml";
+export type LanguageId =
+  | "typescript" | "tsx" | "javascript" | "jsx"
+  | "json" | "yaml" | "toml" | "csv" | "properties" | "html" | "css" | "markdown" | "graphql" | "jsonc";
 export type ConversionStatus = "success" | "warning" | "error";
 export interface Diagnostic {
   severity: "error" | "warning" | "info";

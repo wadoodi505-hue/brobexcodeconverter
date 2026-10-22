@@ -3,7 +3,8 @@ import { Link, RouterProvider, useLocation, useNavigate } from "./router";
 import { ArrowDownUp, ArrowRight, Check, ChevronDown, CircleAlert, Clipboard, Code2, Download, FileCode2, FileUp, LockKeyhole, Menu, Play, RotateCcw, Settings2, ShieldCheck, Sparkles, X } from "lucide-react";
 import Editor from "../components/CodeEditor";
 import { conversions, languages } from "../lib/languageRegistry";
-import { convertCode } from "../converter/convert";
+import { formatSource, minifySource } from "../converter/convert";
+import { convertInWorker } from "../converter/workerBridge";
 import type { ConversionResult, ConversionSettings, LanguageId } from "../types/conversion";
 import { configureMonaco } from "./monaco";
 import "../styles/app.css";
@@ -68,12 +69,45 @@ function AppContent() {
   const convert = async () => {
     setBusy(true); setResult(null);
     try {
-      const res = await convertCode(input, source, target, filename, settings);
+      const res = await convertInWorker(input, source, target, filename, settings);
       setResult(res); setOutput(res.output);
       if (res.status !== "error") setToast(res.status === "warning" ? "Converted with review notes" : "Conversion complete");
     } catch {
       setResult({ status: "error", output: "", outputFilename: "converted", diagnostics: [{ severity: "error", message: "Unexpected conversion failure. Your source remains unchanged; try a smaller file." }], validation: { parsed: false, parser: "Conversion pipeline", message: "Conversion failed unexpectedly." }, engine: "Not completed", notes: [] });
       setOutput("");
+    } finally { setBusy(false); }
+  };
+  const formatCurrent = async () => {
+    const candidate = output || input;
+    if (!candidate.trim()) { setToast("Paste code before formatting."); return; }
+    setBusy(true);
+    try {
+      const formatted = await formatSource(candidate, output ? target : source);
+      setOutput(formatted);
+      setResult({ status: "success", output: formatted, outputFilename: result?.outputFilename ?? filename, diagnostics: [], validation: { parsed: true, parser: "Prettier language parser", message: "Formatting completed. Formatting is not a full semantic validation." }, engine: "Prettier", notes: ["Formatting changes presentation, not intended program logic. Review the result before using it."] });
+      setToast("Formatting complete");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Unable to format this source.");
+    } finally { setBusy(false); }
+  };
+  const minifyCurrent = async () => {
+    setBusy(true);
+    try {
+      const res = await minifySource(input, source, settings.preserveComments);
+      setResult(res); setOutput(res.output);
+      setToast(res.status === "error" ? "Safe minification could not be completed" : "Minification complete");
+    } finally { setBusy(false); }
+  };
+  const analyzeCurrent = async () => {
+    if (!input.trim()) { setToast("Paste code before analyzing."); return; }
+    setBusy(true);
+    try {
+      await formatSource(input, source);
+      setResult({ status: "success", output, outputFilename: result?.outputFilename ?? filename, diagnostics: [], validation: { parsed: true, parser: languages[source].parser, message: "The selected parser accepted the source. This is syntax-level checking, not a full type-check, lint audit, or proof of runtime behavior." }, engine: "BROBEX Code Analysis", notes: ["No automatic code deletion was performed.", "Unused-code and performance findings require language-specific static analysis; this check does not claim to detect them."] });
+      setToast("Syntax analysis completed");
+    } catch (error) {
+      setResult({ status: "error", output: "", outputFilename: filename, diagnostics: [{ severity: "error", message: error instanceof Error ? error.message : "Syntax analysis failed." }], validation: { parsed: false, parser: languages[source].parser, message: "The source could not be parsed by the selected formatter/parser." }, engine: "BROBEX Code Analysis", notes: [] });
+      setToast("Analysis found a parser error");
     } finally { setBusy(false); }
   };
   const copy = async () => {
@@ -104,7 +138,7 @@ function AppContent() {
 
   return <div className="app-shell">
     <header className="topbar">
-      <Link to="/" className="brand" onClick={() => setMobileNav(false)}><span className="brand-mark"><Code2 size={19}/></span><span className="brand-word">BROBEX</span><span className="brand-divider" /><span className="product-name">CODE CONVERTER</span></Link>
+      <a href="https://brobexportfolio.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="Visit BROBEX portfolio in a new tab" className="brand" onClick={() => setMobileNav(false)}><span className="brand-mark"><img src="/brobex-logo.webp" alt="" width="34" height="34" /></span><span className="brand-word">BROBEX</span><span className="brand-divider" /><span className="product-name">CODE CONVERTER</span></a>
       <button className="mobile-menu icon-button" aria-label="Toggle navigation" onClick={() => setMobileNav(!mobileNav)}>{mobileNav ? <X size={19}/> : <Menu size={19}/>}</button>
       <nav className={mobileNav ? "main-nav open" : "main-nav"} aria-label="Main navigation">
         {navItems.map(([key, label]) => <Link key={key} to={key === "converter" ? "/" : `/${key}`} className={page === key ? "nav-link active" : "nav-link"} onClick={() => setMobileNav(false)}>{label}</Link>)}
@@ -113,16 +147,17 @@ function AppContent() {
     </header>
 
     {page === "converter" ? <main className="main-content">
-      <section className="hero">
-        <div className="eyebrow"><span className="eyebrow-line"/><span>DEVELOPER TOOLKIT / 01</span></div>
-        <div className="hero-row"><div><h1>Your code.<br/><em>Any compatible format.</em></h1><p className="hero-copy">Precise transformations. Powerful tools. Private by design.</p></div><div className="hero-note"><ShieldCheck size={18}/><span>Source code stays in your browser.<br/><b>No account. No paid API.</b></span></div></div>
+      <section className="hero hero-centered">
+        <div className="hero-brand-art"><img src="/brobex-logo.webp" alt="BROBEX Code Converter logo" width="76" height="76" fetchPriority="high" /></div>
+        <div className="eyebrow"><span className="eyebrow-line"/><span>THE DEVELOPER'S CONVERSION WORKSPACE</span><span className="eyebrow-line"/></div>
+        <div className="hero-row"><div className="hero-copy-wrap"><h1>BROBEX <em>Code Converter</em></h1><p className="hero-copy">Convert, format, and validate code with precision.</p><p className="hero-supporting">A professional browser-based code converter for JavaScript, TypeScript, React, JSON, YAML, TOML, CSV, and other compatible formats — with clear diagnostics and privacy-first processing.</p><div className="hero-trust"><span><ShieldCheck size={15}/> Browser-first processing</span><span><Code2 size={15}/> Compiler-aware tools</span><span><LockKeyhole size={15}/> No code upload in core workflow</span></div></div></div>
       </section>
       <section className="workspace" aria-label="Code conversion workspace">
         <div className="workspace-toolbar">
           <div className="conversion-selectors">
             <label className="select-wrap"><span>FROM</span><select value={source} onChange={(e) => changeSource(e.target.value as LanguageId)}>{Object.entries(languages).map(([id, lang]) => <option key={id} value={id}>{lang.label}</option>)}</select><ChevronDown size={14}/></label>
             <button className="swap-button" aria-label="Swap source and target" onClick={swap} disabled={!conversions.some((c) => c.source === target && c.target === source)}><ArrowDownUp size={16}/></button>
-            <label className="select-wrap"><span>TO</span><select value={target} onChange={(e) => changeTarget(e.target.value as LanguageId)}>{Object.entries(languages).map(([id, lang]) => <option key={id} value={id}>{lang.label}</option>)}</select><ChevronDown size={14}/></label>
+            <label className="select-wrap"><span>TO</span><select value={target} onChange={(e) => changeTarget(e.target.value as LanguageId)}>{conversions.filter((c) => c.source === source).map((c) => <option key={`${c.id}-${c.target}`} value={c.target}>{languages[c.target].label}{c.source === c.target ? " · Format" : ""}</option>)}</select><ChevronDown size={14}/></label>
           </div>
           <div className="toolbar-actions"><button className="subtle-button" onClick={() => setShowSettings(!showSettings)}><Settings2 size={15}/> Settings</button><button className="subtle-button" onClick={() => inputFile.current?.click()}><FileUp size={15}/> Upload file</button><input ref={inputFile} type="file" hidden onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }}/></div>
         </div>
@@ -146,7 +181,7 @@ function AppContent() {
         </div>
         <div className="convert-bar">
           <div className="convert-meta"><span className="engine-indicator"><span/> ENGINE READY</span><span className="conversion-label">{definition ? definition.engine : "Unsupported conversion pair"}</span></div>
-          <div className="convert-actions"><button className="clear-button" onClick={clear}><RotateCcw size={14}/> Reset</button><button className="convert-button" onClick={() => void convert()} disabled={busy || !definition}><span>{busy ? "Converting…" : "Convert code"}</span>{busy ? <Sparkles size={16} className="spin"/> : <Play size={15} fill="currentColor"/>}</button></div>
+          <div className="convert-actions"><button className="clear-button" onClick={() => void analyzeCurrent()} disabled={busy}><ShieldCheck size={14}/> Analyze</button><button className="clear-button" onClick={() => void formatCurrent()} disabled={busy}><Settings2 size={14}/> Format</button><button className="clear-button" onClick={() => void minifyCurrent()} disabled={busy}><Sparkles size={14}/> Minify</button><button className="clear-button" onClick={clear}><RotateCcw size={14}/> Reset</button><button className="convert-button" onClick={() => void convert()} disabled={busy || !definition}><span>{busy ? "Working…" : "Convert code"}</span>{busy ? <Sparkles size={16} className="spin"/> : <Play size={15} fill="currentColor"/>}</button></div>
         </div>
         {result && <section className={`result-card ${result.status}`} aria-live="polite">
           <div className="result-head"><div className="result-status">{result.status === "error" ? <CircleAlert size={17}/> : result.status === "warning" ? <CircleAlert size={17}/> : <Check size={17}/>}<b>{result.status === "success" ? "Conversion complete" : result.status === "warning" ? "Converted — review notes" : "Conversion failed"}</b></div><span className="result-engine">{result.engine}</span></div>
@@ -156,9 +191,9 @@ function AppContent() {
           <div className="result-foot"><span><Check size={13}/> Output parser: {result.validation.parsed ? "passed" : "not passed"}</span><span><CircleAlert size={13}/> Behavioral equivalence is not automatically verified</span></div>
         </section>}
       </section>
-      <section className="below-workspace"><div className="section-kicker">BUILT FOR REAL WORK</div><div className="feature-grid"><article><span className="feature-icon"><Code2 size={18}/></span><h3>Compiler-backed</h3><p>Uses language-aware parsers and compiler transforms, not fragile text replacement.</p></article><article><span className="feature-icon"><LockKeyhole size={18}/></span><h3>Private by design</h3><p>Core conversion runs locally. Your source is not uploaded to a conversion server.</p></article><article><span className="feature-icon"><ShieldCheck size={18}/></span><h3>Honest validation</h3><p>See parsing results, warnings, and limitations instead of unsupported guarantees.</p></article></div></section>
+      <section className="below-workspace"><div className="section-kicker">BUILT FOR REAL WORK</div><div className="feature-grid"><article><span className="feature-icon"><Code2 size={18}/></span><h3>Compiler-backed</h3><p>Uses language-aware parsers and compiler transforms, not fragile text replacement.</p></article><article><span className="feature-icon"><LockKeyhole size={18}/></span><h3>Private by design</h3><p>Core conversion runs locally. Your source is not uploaded to a conversion server.</p></article><article><span className="feature-icon"><ShieldCheck size={18}/></span><h3>Honest validation</h3><p>See parsing results, warnings, and limitations instead of unsupported guarantees.</p></article><article><span className="feature-icon"><FileUp size={18}/></span><h3>Simple file workflow</h3><p>Load supported source files, inspect the result, and download your transformed output.</p></article><article><span className="feature-icon"><Sparkles size={18}/></span><h3>Focused developer tools</h3><p>Format, minify, analyze syntax, and convert only where an implementation is available.</p></article></div></section>
     </main> : <InfoPage page={page} navigate={navigate}/>}
-    <footer className="site-footer"><div className="footer-brand"><span className="brand-mark small"><Code2 size={14}/></span><b>BROBEX</b><span>CODE CONVERTER</span></div><p>Your Code. Any Compatible Format.</p><div className="footer-links"><Link to="/privacy">Privacy</Link><Link to="/docs">Documentation</Link><span>v1.0 · Browser-first</span></div></footer>
+    <footer className="site-footer"><a className="footer-brand developer-logo" href="https://brobexportfolio.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="Meet the developer — visit the BROBEX portfolio" title="Meet the developer"><span className="developer-logo-ring"><img src="/brobex-logo.webp" alt="BROBEX logo" width="34" height="34" loading="lazy"/></span><span className="developer-tooltip">Meet the developer</span></a><p><strong>BROBEX Code Converter</strong><span>Convert smarter. Keep control of your code.</span></p><div className="footer-links"><Link to="/privacy">Privacy</Link><Link to="/docs">Documentation</Link><span>v1.0 · Browser-first</span></div></footer>
     {toast && <div className="toast" role="status"><Check size={15}/>{toast}</div>}
   </div>;
 }
@@ -175,7 +210,7 @@ function InfoPage({ page, navigate }: { page: Page; navigate: (path: string) => 
   const title = page === "languages" ? "Supported formats" : page === "how" ? "How it works" : page === "docs" ? "Documentation" : "Privacy, by design";
   const intro = page === "languages" ? "Only conversion pairs backed by an implemented engine are available in the converter." : page === "how" ? "A transparent conversion pipeline, from parsing to output validation." : page === "docs" ? "Practical guidance for getting reliable results from BROBEX Code Converter." : "Your source code stays in the browser during the core conversion workflow.";
   return <main className="info-page"><div className="eyebrow"><span className="eyebrow-line"/><span>BROBEX / {page.toUpperCase()}</span></div><h1>{title}</h1><p className="info-intro">{intro}</p>
-    {page === "languages" && <><div className="language-search"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter conversions…" aria-label="Filter supported conversions"/></div><div className="conversion-list">{conversions.filter((c) => `${c.label} ${c.engine}`.toLowerCase().includes(query.toLowerCase())).map((c) => <article className="conversion-row" key={c.id}><div><b>{c.label}</b><p>{c.engine}</p><small>{c.limitations.join(" ")}</small></div><span className="supported-badge"><Check size={13}/> Implemented</span></article>)}</div><p className="disclaimer">“Implemented” means the transformation path exists and is testable; it does not promise full semantic equivalence for every project.</p></>}
+    {page === "languages" && <><div className="language-search"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter operations…" aria-label="Filter supported conversions"/></div><div className="conversion-list">{conversions.filter((c) => `${c.label} ${c.engine}`.toLowerCase().includes(query.toLowerCase())).map((c) => <article className="conversion-row" key={c.id}><div><b>{c.label}</b><p>{c.engine}</p><small>{c.limitations.join(" ")}</small></div><span className="supported-badge"><Check size={13}/> Implemented</span></article>)}</div><p className="disclaimer">Supported operations include true conversions and same-format formatting. Language formatting is not a conversion to another language, and no operation guarantees runtime equivalence for every project.</p></>}
     {page === "how" && <div className="steps-list">{[["01","Choose formats","Select a source language and a supported target format. Unsupported pairs are disabled."],["02","Parse the source","A real parser checks syntax before a compiler or serializer transforms the input."],["03","Transform and format","The selected engine performs a deterministic transformation. Prettier can format supported output."],["04","Inspect diagnostics","Review parser status, warnings, and known limitations before using the result in a project."]].map(([n,t,d]) => <article className="step-row" key={n}><span>{n}</span><div><h3>{t}</h3><p>{d}</p></div></article>)}</div>}
     {page === "docs" && <div className="docs-content"><h2>Quick start</h2><ol><li>Paste code or upload a supported single file (maximum 5 MB).</li><li>Select a conversion pair marked as supported.</li><li>Choose whether to format output and preserve comments.</li><li>Run conversion, review diagnostics, then copy or download the result.</li></ol><h2>Supported transformations</h2><p>TypeScript → JavaScript uses the TypeScript Compiler API. TSX/JSX syntax transformations use Babel. JSON/YAML conversion uses dedicated parsers and serializers. JavaScript → TypeScript and JSX → TSX deliberately avoid inventing types.</p><h2>Limitations</h2><p>This is a single-file tool, not a project-aware build system. It does not resolve imports, run your program, run a type-check against project dependencies, or prove behavior equivalence. Review generated code and run your own project test suite.</p><h2>Keyboard and editor</h2><p>Monaco Editor provides familiar editing shortcuts. Use your browser's normal keyboard and focus navigation. The app respects reduced-motion preferences.</p><button className="convert-button" onClick={() => navigate("/")}><span>Open converter</span><ArrowRight size={15}/></button></div>}
     {page === "privacy" && <div className="docs-content"><h2>Local processing</h2><p>The conversion workflow runs in your browser using the code shipped with this website. Source text is not intentionally sent to a conversion API or uploaded by the core conversion features.</p><h2>File handling</h2><p>When you select a file, the browser reads it locally. The app does not upload it. Output downloads are generated locally through a browser Blob URL.</p><h2>Local storage</h2><p>This version does not persist source code or drafts in local storage. Code remains in the active page memory until you clear it or close/reload the page.</p><h2>Third-party code</h2><p>The application bundles open-source dependencies including React, Monaco Editor, TypeScript, Babel, Prettier, YAML, and Lucide React. Hosting providers may process standard network request metadata when you visit the website; consult the selected host's policy.</p><h2>Limits</h2><p>This description covers the application's core behavior, not every network or hosting layer. Review the deployed build and hosting configuration before making broader privacy claims.</p></div>}
