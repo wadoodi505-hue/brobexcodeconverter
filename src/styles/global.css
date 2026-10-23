@@ -8,6 +8,8 @@
     -moz-osx-font-smoothing: grayscale;
     font-optical-sizing: auto;
     font-weight: 400;
+    font-size: 15px;
+    line-height: 1.65;
     --bg: #080808;
     --surface: #101010;
     --panel: #151515;

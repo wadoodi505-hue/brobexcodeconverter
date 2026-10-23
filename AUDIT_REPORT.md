@@ -28,3 +28,12 @@ The source was not fully verifiable in this environment. `npm ci --no-audit --no
 - Added polished feature cards and responsive layout refinements for mobile, tablet, desktop, and ultrawide displays.
 - Expanded title, description, keyword, Open Graph, Twitter, and WebApplication structured metadata. A canonical URL is intentionally omitted until the confirmed production URL is known.
 - Dependency installation did not complete in this environment, so build/typecheck/test results remain unverified.
+
+
+## Typography and premium UI refinement (2026-10-23)
+
+- Increased default reading size to 15px and raised most descriptive text, controls, labels, result diagnostics, and supported-format descriptions to more comfortable professional sizes.
+- Refined spacing, panel borders, gold accent restraint, workspace depth, button sizing, card treatment, and hover/focus feedback.
+- Improved desktop and ultrawide editor sizing while retaining compact responsive layouts for tablets and phones.
+- Kept the existing React/TypeScript stack, dependencies, conversion engines, navigation, and current product claims unchanged. No unsupported conversion capability or SaaS/backend feature is advertised.
+- Build, lint, tests, and live-browser checks still require running in a network-enabled environment after dependencies are installed.
