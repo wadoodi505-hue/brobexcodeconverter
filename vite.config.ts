@@ -1,26 +1,24 @@
-﻿
-import { defineConfig } from "vite";
+﻿import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
-  plugins: [react()],
-
+  plugins: [
+    react(),
+    nodePolyfills({
+      include: ["path", "process"],
+      globals: { process: true },
+    }),
+  ],
   base: "./",
-
-  // Replace Babel's Node.js environment check at build time.
   define: {
-    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    "process.env.NODE_ENV": JSON.stringify(
+      process.env.NODE_ENV || "production"
+    ),
   },
-
-  server: {
-    sourcemapIgnoreList: (sourcePath) =>
-      sourcePath.includes("monaco-editor"),
-  },
-
   build: {
     target: "es2022",
-    sourcemap: true,
-
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -30,20 +28,20 @@ export default defineConfig({
           ) {
             return "editor";
           }
-
-          if (
-            id.includes("node_modules/@babel") ||
-            id.includes("node_modules/typescript")
-          ) {
-            return "compiler";
+          if (id.includes("node_modules/@babel/")) {
+            return "babel";
+          }
+          if (id.includes("node_modules/typescript/")) {
+            return "typescript";
+          }
+          if (id.includes("node_modules/prettier/")) {
+            return "prettier";
           }
         },
       },
     },
   },
-
   optimizeDeps: {
     exclude: ["monaco-editor"],
   },
 });
-
