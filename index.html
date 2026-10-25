@@ -1,44 +1,98 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#080808" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="application-name" content="BROBEX Code Converter" />
-    <meta name="description" content="BROBEX Code Converter helps developers convert compatible code and data formats, format source files, and inspect syntax diagnostics in a privacy-first browser workspace." />
-    <meta name="keywords" content="Brobex Code Converter, Brobex Converter, code converter, online code converter, TypeScript to JavaScript, TSX to JSX, JavaScript to TypeScript, JSON to YAML, YAML to JSON, CSV to JSON, code formatter, code validation, developer tools" />
-    <meta name="author" content="BROBEX" />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
-    <link rel="icon" type="image/webp" href="/brobex-logo.webp" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta property="og:site_name" content="BROBEX Code Converter" />
-    <meta property="og:title" content="BROBEX Code Converter — Convert Code with Confidence" />
-    <meta property="og:description" content="Convert compatible code and data formats, format source files, and inspect syntax diagnostics in a premium black-and-gold developer workspace." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/brobex-logo.webp" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="BROBEX Code Converter" />
-    <meta name="twitter:description" content="A professional browser-based code conversion and formatting workspace by BROBEX." />
-    <meta name="twitter:image" content="/brobex-logo.webp" />
-    <title>BROBEX Code Converter | Online Code Converter &amp; Developer Tools</title>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "BROBEX Code Converter",
-        "alternateName": ["BROBEX Converter", "Brobex Code Converter"],
-        "description": "A browser-based developer tool for supported source-code and data-format conversions, formatting, and syntax diagnostics.",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Any",
-        "browserRequirements": "Requires a modern JavaScript-enabled browser",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "author": { "@type": "Organization", "name": "BROBEX", "url": "https://brobexportfolio.vercel.app/" }
-      }
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#090a0f" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="application-name" content="BROBEX Code Converter" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Brobex Converter" />
+  
+  <!-- Primary SEO Meta Tags -->
+  <title>BROBEX Code Converter | Professional Online Code Converter &amp; Developer Toolkit</title>
+  <meta name="title" content="BROBEX Code Converter | Professional Online Code Converter &amp; Developer Toolkit" />
+  <meta name="description" content="BROBEX Code Converter is a high-performance, privacy-first browser workspace by Brobex. Instantly convert TypeScript, JavaScript, JSON, YAML, XML, Markdown, Base64, format source files, and inspect syntax diagnostics." />
+  <meta name="keywords" content="Brobex Code Converter, Brobex Converter, Brobex tools, online code converter, TypeScript to JavaScript, TSX to JSX, JavaScript to TypeScript, JSON to YAML, YAML to JSON, CSV to JSON, code formatter, code validation, developer utilities, Brobex developer workspace" />
+  <meta name="author" content="BROBEX" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://brobexportfolio.vercel.app/" />
+
+  <!-- Performance & Preconnects -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/webp" href="/brobex-logo.webp" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Open Graph / Facebook Meta Tags -->
+  <meta property="og:site_name" content="BROBEX Code Converter" />
+  <meta property="og:title" content="BROBEX Code Converter — Convert Code with Confidence" />
+  <meta property="og:description" content="Transform source code, format data structures, and debug syntax seamlessly in a lightning-fast, premium developer workspace built by Brobex." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://brobexportfolio.vercel.app/" />
+  <meta property="og:image" content="https://brobexportfolio.vercel.app/brobex-logo.webp" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BROBEX Code Converter | Developer Tools by Brobex" />
+  <meta name="twitter:description" content="A professional browser-based code conversion, formatting, and inspection workspace crafted by Brobex." />
+  <meta name="twitter:image" content="https://brobexportfolio.vercel.app/brobex-logo.webp" />
+
+  <!-- Structured Data / JSON-LD for Top-Tier Search Engine Rich Snippets -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://brobexportfolio.vercel.app/#webapp",
+          "name": "BROBEX Code Converter",
+          "alternateName": ["Brobex Converter", "Brobex Code Tool", "BROBEX Code Converter"],
+          "url": "https://brobexportfolio.vercel.app/",
+          "description": "An advanced browser-based developer workspace for code conversion, data transformation, formatting, and syntax validation created by Brobex.",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires JavaScript. Works in all modern browsers.",
+          "softwareVersion": "2.0.0",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "author": {
+            "@id": "https://brobexportfolio.vercel.app/#organization"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://brobexportfolio.vercel.app/#organization",
+          "name": "BROBEX",
+          "url": "https://brobexportfolio.vercel.app/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://brobexportfolio.vercel.app/brobex-logo.webp"
+          },
+          "sameAs": [
+            "https://github.com/brobex"
+          ]
+        }
+      ]
+    }
+  </script>
+</head>
+
+<body class="bg-[#050505] text-slate-100 antialiased selection:bg-cyan-500 selection:text-black">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
